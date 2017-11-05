@@ -1,0 +1,234 @@
+#Libraries
+import smtplib
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+import logging
+import subprocess
+import os
+import pandas
+import requests
+import re
+
+#Parameter
+#SMTP
+smtp_server= "$SMTP_SERVER"
+smtp_port= $SMTP_PORT
+smtp_user= "$SMTP_USER"
+smtp_pass= "$SMTP_PASS"
+smtp_source_mail= "$SMTP_SOURCE_MAIL"
+smtp_target_mail= "$SMTP_TARGET_MAIL"
+
+#Webservice
+netcup_user = "$NETCUP_USER"
+netcup_pass = "$NETCUP_PASS"
+url= "$URL"
+server_file = "/srv/data/servers.conf"
+failoverIP = "$FAILOVER_IP"
+failoverIPNetmask = "$FAILOVER_NETMASK"
+FAILOVER_ERROR_OCCURED = 'false'
+
+#Logging
+log_file='/srv/data/failover.log'
+log_format='%(asctime)s - %(levelname)s - %(message)s'
+
+#Messages
+body_deleting_failed = "An Error occured during server failover. Deleting IP routing failed wiht the following return message: "
+body_setting_failed = "An Error occured during server failover. Setting up new IP routing failed with the following return message: "
+body_setting_successful = "FAILOVER SUCCESSFUL \n \n A docker swarm leader failure occured and the ip routing changed successfully. New leader for the swarm is "
+
+
+#reading available leaders
+servers = pandas.read_csv(server_file, sep=";", names=["id", "name", "mac", "ip"])
+
+
+#-------------FUNKTIONS------------------------------
+def getCurrentLeader():
+        command="curl -s --unix-socket /var/run/docker.sock  http://docker/v1.25/nodes?role=manager"
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+        (json, err) = process.communicate()
+	status = re.search(r'Hostname":"(.*?)"', json)
+	return status.group(1)
+
+
+def getLastLeader():
+        file = open('lastLeader.log', 'r')
+        lastLeader = file.read()
+	file.close()
+        return lastLeader.strip().rstrip()
+
+
+
+def getServerInfo(server_id):
+	return servers[servers["id"] == server_id]
+
+#def getServerInfo2(server_id):
+#	return command = grep server_id
+
+
+def writeCurrentLeaderToFile(currentLeader):
+                file = open('/srv/data/lastLeader.log', 'w')
+                file.write(currentLeader)
+                file.close()
+
+
+def initLogging():
+        logger.setLevel(logging.INFO)
+        formatter = logging.Formatter(log_format)
+
+        #Init file logging
+        handler = logging.FileHandler(log_file)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+        #Init console logging
+        handler2 = logging.StreamHandler()
+        handler2.setFormatter(formatter)
+        logger.addHandler(handler2)
+
+def sendNotification(body, returnmessage):
+
+        # Message definition
+        msg = MIMEMultipart()
+        msg['Subject'] = 'Backend Info'
+        msg['From'] = smtp_source_mail
+        msg['To'] = smtp_target_mail
+	body = body + returnmessage
+        msg.attach(MIMEText(body, 'plain'))
+
+        #Open Connection
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_user, smtp_pass)
+
+        #Send Mail
+        server.sendmail(smtp_source_mail, [smtp_target_mail], msg.as_string())
+        server.quit()
+        logger.info('Mail notifiaction sent')
+
+        return;
+
+def changeIPRouting(netcup_user, netcup_pass, server, ip, netmask, mac):
+        #Template
+        template_message ="""<?xml version="1.0" encoding="UTF-8"?>
+                        <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="http://enduser.service.web.vcp.netcup.de/">
+                                <SOAP-ENV:Body>
+                                        <ns1:changeIPRouting>
+                                                <loginName>%s</loginName>
+                                                <password>%s</password>
+                                                <routedIP>%s</routedIP>
+                                                <routedMask>%s</routedMask>
+                                                <destinationVserverName>%s</destinationVserverName>
+                                                <destinationInterfaceMAC>%s</destinationInterfaceMAC>
+                                        </ns1:changeIPRouting>
+                                </SOAP-ENV:Body>
+                        </SOAP-ENV:Envelope>"""
+       	   #Create Message
+        message=template_message%(netcup_user, netcup_pass, ip, netmask, server, mac)
+	
+	#Definition Header
+        headers = {"Content-Type":  "text/xml ; charet=UTF-8","Content-Length": str(len(message)),"SOAPAction": ""  }
+		
+        #Send SOAP Post
+        response = requests.post(url,data=message,headers=headers)
+        if response.status_code == 200:
+                logger.info("SOAP: changeIPRouting Returncode 200.")
+		status = re.search(r'<return>(.*?)<\/return>', response.content)
+		if status:
+        		return status.group(1) #true
+		else:
+			return response.content
+        else:
+		return response.content
+
+
+#----------------MAIN----------------------------
+
+#Init Logger
+logger = logging.getLogger()
+initLogging()
+
+#while true:
+
+#FAILOVER_ERROR_OCCURED
+
+#chek for file existence
+if not os.path.isfile('lastLeader.log'):
+	#file not existing
+        
+	logger.info('file lastLeader.log not found, file is created')
+        os.mknod("lastLeader.log")
+	writeCurrentLeaderToFile(getCurrentLeader())
+
+else:	
+	#file exists
+        
+	lastLeader = getLastLeader()
+        
+	if not lastLeader:
+		#variable empty
+                
+		currentLeader = getCurrentLeader();
+		logger.info('lastLeader.log is empty and is set to ' + currentLeader)
+                #write currentLeader into file lastLeader
+		file = open('lastLeader.log', 'w')
+                file.write(currentLeader)
+		file.close()
+		
+        else:	
+		#variable not empty
+		
+		#read lastLeader from file
+                currentLeader = getCurrentLeader();
+                
+		if not lastLeader == currentLeader:		#current and last leader mismatch
+                        logger.info('leader mismatch, inititating failover for ' + failoverIP)
+			#delete IP Routing
+			info_del = getServerInfo(lastLeader)
+			return_del = changeIPRouting(netcup_user, netcup_pass, info_del['name'].iloc[0], failoverIP, failoverIPNetmask, '00:00:00:00:00:00')
+			
+			if return_del == 'true':
+				#delete IP routing successful
+				
+				logger.info('deleting IP routing for ' + failoverIP + ' successful, setting new IP routing')
+				#get server info from current leader
+				info_set = getServerInfo(currentLeader)
+				#request change IP routing for current leader
+				return_set = changeIPRouting(netcup_user, netcup_pass, info_set['name'].iloc[0], failoverIP, failoverIPNetmask, info_set['mac'].iloc[0])
+
+				if return_set == 'true':
+					#set IP routing successful
+
+					sendNotification(body_setting_successful, currentLeader)
+					file = open('lastLeader.log', 'w')
+                                        file.write(currentLeader)
+                                        file.close()
+					logger.info('setting up new IP routing for ' + failoverIP + ' was successful')
+					
+				else:
+					#set IP routing failed
+					
+					if not FAILOVER_ERROR_OCCURED == 'true':
+						
+						#set new IP routing failed at first try
+
+						logger.error('setting new IP routing for ' + failoverIP + ' failed at first try, notification mail is sent')
+						sendNotification(body_setting_failed, return_set)
+						FAILOVER_ERROR_OCCURED = 'true'
+					else:
+						#set new IP routing failed again
+
+						logger.error('another attempt for setting up new IP routing ' + failoverIP + ' failed')
+
+			else:
+				#delete IP routing failed
+
+				if not FAILOVER_ERROR_OCCURED == 'true':
+					#delete IP routing failed at first try
+
+					FAILOVER_ERROR_OCCURED = 'true'
+					logger.error('setting new IP routing for ' + failoverIP + ' failed at first try, notification mail is sent')
+					sendNotification(body_deleting_failed, return_del)
+				else:
+					#delete IP routing failed again
+
+					logger.error('another attemmpt for deleting IP routing for ' + failoverIP + ' failed')

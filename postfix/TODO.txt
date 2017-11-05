@@ -1,0 +1,7 @@
+Aufgabenliste für dieses Image:
+
+- Struktur genau abbilden		später
+- Verschlüsselung einführen
+- Alias Tabelle
+- Virenschutz					später
+- Spamassasin
