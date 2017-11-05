@@ -38,9 +38,12 @@ if [ ! -z $DOMAIN_9 ] && [ ! -z $KOPANO_HOST_9 ]; then
 		echo "$DOMAIN_9 registriert"
 fi
 echo "" /etc/perdition/popmap.re
+mv /tmp/template/perdition/perdition.conf /etc/perdition/perdition.conf
 
 #Starten von perdition
 echo "Starte Perdition"
-perdition.imap4 -l 143 -M /usr/lib/libperditiondb_posix_regex.so.0 -m /etc/perdition/popmap.re -P IMAP4 -b 0.0.0.0 -f "" --log_facility /var/log/perdition.log
+service rsyslog start
+service perdition start
+#perdition.imap4 -l 143 -M /usr/lib/libperditiondb_posix_regex.so.0 -m /etc/perdition/popmap.re -P IMAP4 -b 0.0.0.0 -f "" --log_facility /var/log/perdition.log
 
-tail -f /var/log/perdition.log
+tail -f /var/log/mail.log
