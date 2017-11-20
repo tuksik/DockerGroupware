@@ -1,2 +1,2 @@
-docker build  -t meteorit/kopano:2 .
+docker build  -t registry.meteorit-leipzig.de/kopano:4 .
 
