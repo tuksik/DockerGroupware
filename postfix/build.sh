@@ -1,1 +1,1 @@
-docker build -t registry.meteorit-leipzig.de/postfix:1 .
+docker build -t registry.meteorit-leipzig.de/postfix:2 .

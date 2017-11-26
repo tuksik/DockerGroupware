@@ -39,7 +39,6 @@ if [ ! -z $DOMAIN_9 ] && [ ! -z $KOPANO_HOST_9 ]; then
 fi
 
 postmap /etc/postfix/transport
-postmap /etc/postfix/whitelist
 usermod -a -G sasl postfix
 
 #Anpassen der Postfix Config und der Aliase
