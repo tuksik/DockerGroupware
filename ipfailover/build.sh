@@ -1,1 +1,1 @@
-docker build  -t registry.meteorit-leipzig.de/ipfailover:1 .
+docker build  -t registry.meteorit-leipzig.de/ipfailover:2 .
