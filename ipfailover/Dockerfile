@@ -16,12 +16,16 @@ ENV NETCUP_USER="<NETCUP_USER>" \
 	URL="https://www.vservercontrolpanel.de:443/WSEndUser?wsdl" \
 	FAILOVER_IP="<FAILOVER_IP>" \
 	FAILOVER_NETMASK="<FAILOVER_MASK>"
+	
+#Server Parameter
+ENV TIME_BETWEEN_PINGS=60 \
+    SERVER_1="<server_spitzname>;<server_name>;<mac>;<ip>"
 
 WORKDIR /srv
 
 
 RUN  apt-get update \
-  && apt-get -y install gettext-base curl python python-pip \
+  && apt-get -y install gettext-base curl python python-pip iputils-ping \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 RUN pip install requests pandas 
