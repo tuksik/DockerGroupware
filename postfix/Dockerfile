@@ -13,9 +13,11 @@ ENV DB_HOST=localhost \
 	KOPANO_HOST_1=localhost \
 	SPAMCHECK_HOST=localhost \
 	SPAMCHECK_PORT=11332 \
-	IMAPPROXY_HOST=localhost
-#DOMAIN_1 bis DOMAIN_10 sind möglich (inkl. KOPANO_HOST_1)
-	
+	IMAPPROXY_HOST=localhost \
+	USE_FQDN_FROM_HOST=FALSE 
+
+#DOMAIN_1 to DOMAIN_10 are possible(incl. KOPANO_HOST_1)
+#USE_FQDN_FROM_HOST needs the following volume: -v /etc/hosts:/tmp/hosts:ro 
 
 WORKDIR /tmp
 

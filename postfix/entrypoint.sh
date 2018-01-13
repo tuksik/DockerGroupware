@@ -1,5 +1,20 @@
 #!/bin/bash
 
+#Setzen des Hostnames
+FQDN=$DOMAIN_1
+if [ "$USE_FQDN_FROM_HOST" == "TRUE" ];then
+
+        HOSTSFILE_PATH=/tmp/hosts
+        if [ -f $HOSTSFILE_PATH ]; then
+                FQDN=`cat /tmp/hosts | grep 127.0.1.1 | cut -f 2 | cut -d " " -f 1`
+                echo Hostname set to: $FQDN
+        else
+                echo "fqdn from host can't be set, please mount /etc/hosts with '-v /etc/hosts:/tmp/hosts:ro'"
+        fi
+fi
+
+
+
 #Erstellen der Domänenabhängigen Konfigurationen
 if [ ! -z $DOMAIN_1 ] && [ ! -z $KOPANO_HOST_1 ]; then
         echo $DOMAIN_1 "lmtp:["${KOPANO_HOST_1}"]:2003" >> /etc/postfix/transport
@@ -42,8 +57,8 @@ postmap /etc/postfix/transport
 usermod -a -G sasl postfix
 
 #Anpassen der Postfix Config und der Aliase
-DB_HOST=$DB_HOST DB_USER=$DB_USER DB_PASS=$DB_PASS DB_NAME=$DB_NAME envsubst < /tmp/template/postfix/mysql-virtual-alias-maps.cf.tmpl > /etc/postfix/mysql-virtual-alias-maps.cf
-DOMAIN_1=$DOMAIN_1 SPAMCHECK_CONTAINER=$SPAMCHECK_CONTAINER SPAMCHECK_PORT=$SPAMCHECK_PORT ENCRYPT_SETTING=$ENCRYPT_SETTING envsubst < /tmp/template/postfix/main.cf.tmpl > /etc/postfix/main.cf
+envsubst < /tmp/template/postfix/mysql-virtual-alias-maps.cf.tmpl > /etc/postfix/mysql-virtual-alias-maps.cf
+FQDN=$FQDN envsubst < /tmp/template/postfix/main.cf.tmpl > /etc/postfix/main.cf
 
 
 #Starten des Sasl Dienstes
@@ -60,5 +75,5 @@ service postfix start
 postfix reload
 
 
-tail -f /var/log/mail.*
+tail -f /var/log/mail.info
 
