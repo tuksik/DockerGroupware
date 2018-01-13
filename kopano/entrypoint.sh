@@ -59,8 +59,12 @@ echo "php_flag magic_quotes_runtime = off" >> /etc/php/7.0/fpm/php.ini
 echo "php_flag short_open_tag = on" >> /etc/php/7.0/fpm/php.ini
 
 #Anpassen der PHP-FPM Config
+sed -i  "s/post_max_size =.*/post_max_size = $PHP_POST_MAX_SIZE/g"  /etc/php/7.0/fpm/php.ini
+sed -i  "s/upload_max_filesize =.*/upload_max_filesize = $PHP_UPLOAD_MAX_FILESIZE/g"  /etc/php/7.0/fpm/php.ini
+sed -i  "s/memory_limit = .*/memory_limit = $PHP_MEMORY_LIMIT/g"  /etc/php/7.0/fpm/php.ini
+
 sed -i "s/;pm.status_path = \/status/pm.status_path = \/status/g" /etc/php/7.0/fpm/pool.d/www.conf
-sed -i "s/pm.max_children.*/pm.max_children = 30/g" /etc/php/7.0/fpm/pool.d/www.conf
+sed -i "s/pm.max_children.*/pm.max_children = $FPM_MAX_CHILDREN/g" /etc/php/7.0/fpm/pool.d/www.conf
 sed -i "s/pm.start_servers.*/pm.start_servers = 5/g" /etc/php/7.0/fpm/pool.d/www.conf
 sed -i "s/pm.min_spare_servers.*/pm.min_spare_servers = 5/g" /etc/php/7.0/fpm/pool.d/www.conf
 sed -i "s/pm.max_spare_servers.*/pm.max_spare_servers = 10/g" /etc/php/7.0/fpm/pool.d/www.conf
@@ -71,6 +75,8 @@ sed -i "s/;slowlog.*/slowlog = \/var\/log\/slowlog.log.slow/g" /etc/php/7.0/fpm/
 sed -i "s/;emergency_restart_threshold.*/emergency_restart_threshold = 10/g" /etc/php/7.0/fpm/php-fpm.conf
 sed -i "s/;emergency_restart_interval.*/emergency_restart_interval = 1m/g" /etc/php/7.0/fpm/php-fpm.conf
 sed -i "s/;process_control_timeout.*/process_control_timeout = 10/g" /etc/php/7.0/fpm/php-fpm.conf
+
+
 
 #Starten von Nginx
 service nginx start
