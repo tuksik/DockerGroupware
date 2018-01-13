@@ -1,6 +1,8 @@
 #!/bin/bash
 
 ####Anpassen der Kopano Config
+sed -i "s/define(\"THEME\", '');/define(\"THEME\", '$DEFAULT_THEME');/g" /etc/kopano/webapp/config.php
+
 #/etc/kopano/server.cfg
 sed -i "s/system_email_address.*/system_email_address = $KOPANO_SYSTEM_EMAIL/g" /etc/kopano/server.cfg
 sed -i "s/^#log_level.*/log_level = $KOPANO_SERVER_LOGLEVEL/g" /etc/kopano/server.cfg

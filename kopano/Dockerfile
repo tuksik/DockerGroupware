@@ -19,7 +19,8 @@ ENV DB_HOST=localhost \
 	KOPANO_SYSTEM_EMAIL="postmaster@localhost" \
 	KOPANO_ATTACHMENT_STORAGE=database \
 	NGINX_API_KEY="" \
-	TIMEZONE="Europe\/Berlin"
+	TIMEZONE="Europe\/Berlin" \
+	DEFAULT_THEME=""
 
 
 WORKDIR /tmp
