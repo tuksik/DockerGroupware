@@ -33,7 +33,7 @@ ADD installfiles /tmp/installfiles
 ADD template /tmp/template
 ADD entrypoint.sh /tmp	
 
-
+#nginx-aplify installation
 RUN apt update \
 	&& apt -y install curl python2.7 wget \
 	&& curl -sS -L -O https://github.com/nginxinc/nginx-amplify-agent/raw/master/packages/install.sh \
@@ -46,7 +46,7 @@ RUN apt update \
 RUN echo "deb http://repo.z-hub.io/z-push:/final/Ubuntu_16.04/ /" >>  /etc/apt/sources.list.d/z-push.list \
 	&& wget -qO - http://repo.z-hub.io/z-push:/final/Ubuntu_16.04/Release.key | apt-key add - \
 	&& apt update \
-	&& apt install -y vim rsyslog gsoap-dbg php-mbstring gettext wget tar libjs-backbone nginx php7.0-fpm php7.0-mysql \
+	&& apt install -y vim rsyslog gsoap-dbg php-mbstring gettext wget tar libjs-backbone nginx php7.0-fpm php7.0-mysql language-pack-de openssh-server\
 	&& mkdir -p core webapp files mdm template installfiles \
 	&& tar xfvz installfiles/core.tar.gz --strip-components=1  -C core \
 	&& tar xfvz installfiles/webapp.tar.gz --strip-components=1  -C webapp \

@@ -1,5 +1,12 @@
 #!/bin/bash
 
+###Anpassen der um Umlaute zuzulassen
+sed -i "s/# set convert-meta off/set convert-meta off/g" /etc/inputrc
+echo -e 'LANG="de_DE.UTF-8"\nLANGUAGE="de_DE:de"\n' > /etc/default/locale
+
+###Anpassen des Root Login im Container
+sed -i "s/PermitRootLogin.*/PermitRootLogin yes/g" /etc/ssh/sshd_config
+
 ####Anpassen der Kopano Config
 sed -i "s/define(\"THEME\", '');/define(\"THEME\", '$DEFAULT_THEME');/g" /etc/kopano/webapp/config.php
 
